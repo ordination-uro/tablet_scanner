@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+  <title>Fragebogen scannen</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 30px;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+      color: #222222;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-top: 40px;
+      margin-bottom: 15px;
+    }
+
+    p {
+      font-size: 20px;
+      line-height: 1.5;
+    }
+
+    #startButton {
+      margin-top: 30px;
+      padding: 20px 35px;
+      font-size: 24px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    #video {
+      display: none;
+      width: 100%;
+      margin-top: 25px;
+      border-radius: 12px;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Fragebogen scannen</h1>
+
+  <p>
+    Halten Sie den QR-Code vor die Kamera des Tablets.
+  </p>
+
+  <button id="startButton">
+    QR-Code scannen
+  </button>
+
+  <video id="video" playsinline></video>
+
+  <div id="status"></div>
+
+</div>
+
+<script>
+
+const startButton = document.getElementById("startButton");
+const video = document.getElementById("video");
+const status = document.getElementById("status");
+
+let stream = null;
+
+
+/* --------------------------------------------------
+   Nur LATIDO-Adressen zulassen
+-------------------------------------------------- */
+
+function isAllowedLatidoUrl(value) {
+
+  try {
+
+    const url = new URL(value);
+
+    if (url.protocol !== "https:") {
+      return false;
+    }
+
+    const host = url.hostname.toLowerCase();
+
+    return (
+      host === "latido.at" ||
+      host.endsWith(".latido.at") ||
+      host === "latidoapp.at" ||
+      host.endsWith(".latidoapp.at")
+    );
+
+  } catch (error) {
+
+    return false;
+
+  }
+
+}
+
+
+/* --------------------------------------------------
+   Kamera / Scanner starten
+-------------------------------------------------- */
+
+startButton.addEventListener("click", async function () {
+
+  status.textContent = "Kamera wird gestartet …";
+
+
+  /* Prüfen, ob QR-Erkennung unterstützt wird */
+
+  if (!("BarcodeDetector" in window)) {
+
+    status.textContent =
+      "Die QR-Code-Erkennung wird von diesem Browser noch nicht unterstützt.";
+
+    return;
+
+  }
+
+
+  try {
+
+    const supportedFormats =
+      await BarcodeDetector.getSupportedFormats();
+
+    if (!supportedFormats.includes("qr_code")) {
+
+      status.textContent =
+        "QR-Code-Erkennung wird auf diesem Gerät nicht unterstützt.";
+
+      return;
+
+    }
+
+
+    /* Kamera öffnen */
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video: {
+          facingMode: {
+            ideal: "environment"
+          }
+        },
+
+        audio: false
+
+      });
+
+
+    video.srcObject = stream;
+
+    video.style.display = "block";
+
+    startButton.style.display = "none";
+
+    await video.play();
+
+
+    status.textContent =
+      "QR-Code vor die Kamera halten …";
+
+
+    const detector =
+      new BarcodeDetector({
+        formats: ["qr_code"]
+      });
+
+
+    /* --------------------------------------------------
+       QR-Code laufend suchen
+    -------------------------------------------------- */
+
+    async function scan() {
+
+      try {
+
+        const codes =
+          await detector.detect(video);
+
+
+        if (codes.length > 0) {
+
+          const value =
+            codes[0].rawValue.trim();
+
+
+          /* Nur LATIDO öffnen */
+
+          if (isAllowedLatidoUrl(value)) {
+
+            status.textContent =
+              "Fragebogen wird geöffnet …";
+
+
+            /* Kamera ausschalten */
+
+            stream
+              .getTracks()
+              .forEach(track => track.stop());
+
+
+            /*
+              replace() statt href:
+              Scanner-Seite wird nicht als normaler
+              Zurück-Schritt im Verlauf behalten.
+            */
+
+            window.location.replace(value);
+
+            return;
+
+          }
+
+
+          else {
+
+            status.textContent =
+              "Dieser QR-Code gehört nicht zu LATIDO.";
+
+          }
+
+        }
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+
+      setTimeout(scan, 250);
+
+    }
+
+
+    scan();
+
+
+  } catch (error) {
+
+    console.log(error);
+
+    status.textContent =
+      "Die Kamera konnte nicht geöffnet werden. Bitte Kameraberechtigung prüfen.";
+
+  }
+
+});
+
+</script>
+
+</body>
+</html>
