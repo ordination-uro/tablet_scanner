@@ -316,6 +316,260 @@ startButton.addEventListener("click", async function () {
 
         }
 
+<script>
+
+const startButton = document.getElementById("startButton");
+const video = document.getElementById("video");
+const status = document.getElementById("status");
+
+let stream = null;
+let scanning = false;
+let scanTimer = null;
+
+
+/* --------------------------------------------------
+   Nur LATIDO-Adressen zulassen
+-------------------------------------------------- */
+
+function isAllowedLatidoUrl(value) {
+
+  try {
+
+    const url = new URL(value);
+
+    if (url.protocol !== "https:") {
+      return false;
+    }
+
+    const host = url.hostname.toLowerCase();
+
+    return (
+      host === "latido.at" ||
+      host.endsWith(".latido.at") ||
+      host === "latidoapp.at" ||
+      host.endsWith(".latidoapp.at")
+    );
+
+  } catch (error) {
+
+    return false;
+
+  }
+
+}
+
+
+/* --------------------------------------------------
+   Kamera vollständig freigeben
+-------------------------------------------------- */
+
+function stopCamera() {
+
+  scanning = false;
+
+  if (scanTimer) {
+    clearTimeout(scanTimer);
+    scanTimer = null;
+  }
+
+  if (stream) {
+
+    stream.getTracks().forEach(track => {
+      try {
+        track.stop();
+      } catch (e) {}
+    });
+
+    stream = null;
+  }
+
+  try {
+    video.pause();
+  } catch (e) {}
+
+  video.srcObject = null;
+}
+
+
+/* --------------------------------------------------
+   Scanner-Oberfläche zurücksetzen
+-------------------------------------------------- */
+
+function resetScanner() {
+
+  stopCamera();
+
+  video.style.display = "none";
+  startButton.style.display = "inline-block";
+
+  status.textContent = "";
+
+}
+
+
+/* --------------------------------------------------
+   Beim Verlassen / Hintergrund Kamera freigeben
+-------------------------------------------------- */
+
+document.addEventListener("visibilitychange", () => {
+
+  if (document.hidden) {
+    stopCamera();
+  }
+
+});
+
+window.addEventListener("pagehide", () => {
+  stopCamera();
+});
+
+
+/* --------------------------------------------------
+   Wichtig für WebView / Back-Forward-Cache:
+   bei erneutem Anzeigen alles zurücksetzen
+-------------------------------------------------- */
+
+window.addEventListener("pageshow", () => {
+  resetScanner();
+});
+
+
+/* --------------------------------------------------
+   Kamera / Scanner starten
+-------------------------------------------------- */
+
+startButton.addEventListener("click", async function () {
+
+  /*
+    Falls Android noch einen alten Stream hält:
+    zuerst konsequent schließen.
+  */
+
+  stopCamera();
+
+  status.textContent = "Kamera wird gestartet …";
+
+  startButton.disabled = true;
+
+
+  if (!("BarcodeDetector" in window)) {
+
+    status.textContent =
+      "Die QR-Code-Erkennung wird von diesem Browser nicht unterstützt.";
+
+    startButton.disabled = false;
+
+    return;
+
+  }
+
+
+  try {
+
+    /*
+      Android einen kurzen Moment geben,
+      um den alten Kamera-Stream freizugeben.
+    */
+
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+
+    stream = await navigator.mediaDevices.getUserMedia({
+
+      video: {
+        facingMode: {
+          ideal: "environment"
+        }
+      },
+
+      audio: false
+
+    });
+
+
+    video.srcObject = stream;
+
+    video.style.display = "block";
+
+    startButton.style.display = "none";
+
+    startButton.disabled = false;
+
+
+    await video.play();
+
+
+    status.textContent =
+      "QR-Code vor die Kamera halten …";
+
+
+    const detector =
+      new BarcodeDetector({
+        formats: ["qr_code"]
+      });
+
+
+    scanning = true;
+
+
+    async function scan() {
+
+      if (!scanning) {
+        return;
+      }
+
+
+      try {
+
+        if (video.readyState >= 2) {
+
+          const codes =
+            await detector.detect(video);
+
+
+          if (codes.length > 0) {
+
+            const value =
+              codes[0].rawValue.trim();
+
+
+            if (isAllowedLatidoUrl(value)) {
+
+              status.textContent =
+                "Fragebogen wird geöffnet …";
+
+
+              /*
+                Ganz wichtig:
+                Kamera vollständig freigeben,
+                BEVOR Latido geladen wird.
+              */
+
+              stopCamera();
+
+
+              /*
+                Scannerseite nicht im Verlauf behalten
+              */
+
+              window.location.replace(value);
+
+              return;
+
+            }
+
+
+            else {
+
+              status.textContent =
+                "Dieser QR-Code gehört nicht zu LATIDO.";
+
+            }
+
+          }
+
+        }
+
       } catch (error) {
 
         console.log(error);
@@ -323,7 +577,12 @@ startButton.addEventListener("click", async function () {
       }
 
 
-      setTimeout(scan, 250);
+      if (scanning) {
+
+        scanTimer =
+          setTimeout(scan, 300);
+
+      }
 
     }
 
@@ -335,8 +594,14 @@ startButton.addEventListener("click", async function () {
 
     console.log(error);
 
+    stopCamera();
+
+    video.style.display = "none";
+    startButton.style.display = "inline-block";
+    startButton.disabled = false;
+
     status.textContent =
-      "Die Kamera konnte nicht geöffnet werden. Bitte Kameraberechtigung prüfen.";
+      "Die Kamera konnte nicht gestartet werden. Bitte erneut versuchen.";
 
   }
 
