@@ -8,51 +8,96 @@
   <title>Fragebogen/Dokument scannen</title>
 
   <style>
-    body {
-      margin: 0;
-      padding: 30px;
-      font-family: Arial, sans-serif;
-      background: #ffffff;
-      color: #222222;
-      text-align: center;
-    }
+   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap');
 
-    .container {
-      max-width: 700px;
-      margin: 0 auto;
-    }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: 'Montserrat', Arial, sans-serif;
+  color: #16324a;
+}
 
-    h1 {
-      font-size: 32px;
-      margin-top: 40px;
-      margin-bottom: 15px;
-    }
+.container {
+  min-height: 100vh;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 55px 50px 35px;
+  box-sizing: border-box;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
 
-    p {
-      font-size: 20px;
-      line-height: 1.5;
-    }
+.brand {
+  margin-bottom: 60px;
+}
 
-    #startButton {
-      margin-top: 30px;
-      padding: 20px 35px;
-      font-size: 24px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-    }
+.doctor {
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
 
-    #video {
-      display: none;
-      width: 100%;
-      margin-top: 25px;
-      border-radius: 12px;
-    }
+.specialty {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 400;
+  color: #2799a5;
+}
 
-    #status {
-      margin-top: 20px;
-      font-size: 18px;
-    }
+.scanner-card {
+  flex: 1;
+}
+
+h1 {
+  font-size: 34px;
+  font-weight: 600;
+  margin: 10px 0 15px;
+}
+
+.instruction {
+  max-width: 600px;
+  margin: 0 auto 35px;
+  font-size: 20px;
+  line-height: 1.55;
+  color: #536675;
+}
+
+#startButton {
+  padding: 20px 38px;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #217b91;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#video {
+  display: none;
+  width: 100%;
+  max-width: 650px;
+  margin: 30px auto 0;
+  border-radius: 12px;
+}
+
+#status {
+  margin-top: 22px;
+  font-size: 18px;
+  color: #536675;
+}
+
+.footer {
+  margin-top: 45px;
+  padding-top: 22px;
+  border-top: 1px solid #e4e9ec;
+  font-size: 17px;
+  font-weight: 500;
+  color: #217b91;
+}
   </style>
 </head>
 
@@ -60,19 +105,37 @@
 
 <div class="container">
 
-  <h1>Fragebogen scannen</h1>
+  <div class="brand">
+    <div class="doctor">
+      Priv.-Doz. Dr. Maximilian Pallauf, FEBU
+    </div>
 
-  <p>
-    Halten Sie den QR-Code vor die Kamera des Tablets.
-  </p>
+    <div class="specialty">
+      Urologie &amp; Andrologie
+    </div>
+  </div>
 
-  <button id="startButton">
-    QR-Code scannen
-  </button>
+  <div class="scanner-card">
 
-  <video id="video" playsinline></video>
+    <h1>Fragebögen und Dokumente scannen</h1>
 
-  <div id="status"></div>
+    <p class="instruction">
+      Bitte halten Sie den QR-Code vor die Kamera des Tablets.
+    </p>
+
+    <button id="startButton">
+      QR-Code scannen
+    </button>
+
+    <video id="video" playsinline></video>
+
+    <div id="status"></div>
+
+  </div>
+
+  <div class="footer">
+    www.dein-urologe.at
+  </div>
 
 </div>
 
