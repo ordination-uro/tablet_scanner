@@ -105,6 +105,19 @@ h1 {
   height: auto;
   margin-bottom: 25px;
 }
+
+#stopButton {
+  margin-top: 18px;
+  padding: 14px 28px;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  background: #ffffff;
+  color: #217b91;
+  border: 2px solid #217b91;
+  border-radius: 10px;
+  cursor: pointer;
+}
   </style>
   
 </head>
@@ -141,6 +154,10 @@ h1 {
       QR-Code scannen
     </button>
 
+   <button id="stopButton" style="display:none;">
+   Kamera beenden
+  </button>
+
     <video id="video" playsinline></video>
 
     <div id="status"></div>
@@ -156,6 +173,7 @@ h1 {
 <script>
 
 const startButton = document.getElementById("startButton");
+const stopButton = document.getElementById("stopButton");
 const video = document.getElementById("video");
 const status = document.getElementById("status");
 
@@ -319,6 +337,7 @@ startButton.addEventListener("click", async function () {
 <script>
 
 const startButton = document.getElementById("startButton");
+const stopButton = document.getElementById("stopButton");
 const video = document.getElementById("video");
 const status = document.getElementById("status");
 
@@ -360,7 +379,7 @@ function isAllowedLatidoUrl(value) {
 
 
 /* --------------------------------------------------
-   Kamera vollständig freigeben
+   Kamera vollständig beenden
 -------------------------------------------------- */
 
 function stopCamera() {
@@ -388,7 +407,25 @@ function stopCamera() {
   } catch (e) {}
 
   video.srcObject = null;
+
+  /* Oberfläche zurücksetzen */
+
+  video.style.display = "none";
+  stopButton.style.display = "none";
+  startButton.style.display = "inline-block";
+  startButton.disabled = false;
+
+  status.textContent = "";
 }
+
+
+/* --------------------------------------------------
+   Button: Kamera manuell beenden
+-------------------------------------------------- */
+
+stopButton.addEventListener("click", function () {
+  stopCamera();
+});
 
 
 /* --------------------------------------------------
@@ -396,14 +433,7 @@ function stopCamera() {
 -------------------------------------------------- */
 
 function resetScanner() {
-
   stopCamera();
-
-  video.style.display = "none";
-  startButton.style.display = "inline-block";
-
-  status.textContent = "";
-
 }
 
 
@@ -425,8 +455,7 @@ window.addEventListener("pagehide", () => {
 
 
 /* --------------------------------------------------
-   Wichtig für WebView / Back-Forward-Cache:
-   bei erneutem Anzeigen alles zurücksetzen
+   Bei erneutem Anzeigen alles zurücksetzen
 -------------------------------------------------- */
 
 window.addEventListener("pageshow", () => {
@@ -440,15 +469,9 @@ window.addEventListener("pageshow", () => {
 
 startButton.addEventListener("click", async function () {
 
-  /*
-    Falls Android noch einen alten Stream hält:
-    zuerst konsequent schließen.
-  */
-
   stopCamera();
 
   status.textContent = "Kamera wird gestartet …";
-
   startButton.disabled = true;
 
 
@@ -460,15 +483,14 @@ startButton.addEventListener("click", async function () {
     startButton.disabled = false;
 
     return;
-
   }
 
 
   try {
 
     /*
-      Android einen kurzen Moment geben,
-      um den alten Kamera-Stream freizugeben.
+      Android kurz Zeit geben,
+      einen eventuell alten Kamerastream freizugeben
     */
 
     await new Promise(resolve => setTimeout(resolve, 300));
@@ -492,6 +514,7 @@ startButton.addEventListener("click", async function () {
     video.style.display = "block";
 
     startButton.style.display = "none";
+    stopButton.style.display = "inline-block";
 
     startButton.disabled = false;
 
@@ -511,6 +534,10 @@ startButton.addEventListener("click", async function () {
 
     scanning = true;
 
+
+/* --------------------------------------------------
+   QR-Code laufend suchen
+-------------------------------------------------- */
 
     async function scan() {
 
@@ -540,9 +567,8 @@ startButton.addEventListener("click", async function () {
 
 
               /*
-                Ganz wichtig:
-                Kamera vollständig freigeben,
-                BEVOR Latido geladen wird.
+                Kamera vollständig beenden,
+                bevor LATIDO geladen wird
               */
 
               stopCamera();
@@ -595,10 +621,6 @@ startButton.addEventListener("click", async function () {
     console.log(error);
 
     stopCamera();
-
-    video.style.display = "none";
-    startButton.style.display = "inline-block";
-    startButton.disabled = false;
 
     status.textContent =
       "Die Kamera konnte nicht gestartet werden. Bitte erneut versuchen.";
