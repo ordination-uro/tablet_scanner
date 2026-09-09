@@ -155,19 +155,15 @@ startButton.addEventListener("click", async function () {
 
     /* Kamera öffnen */
 
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-
-        video: {
-          facingMode: {
-            ideal: "environment"
-          }
-        },
-
-        audio: false
-
-      });
-
+    stream = await navigator.mediaDevices.getUserMedia({
+  video: {
+    facingMode: "environment",
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+    frameRate: { ideal: 15, max: 30 }
+  },
+  audio: false
+});
 
     video.srcObject = stream;
 
